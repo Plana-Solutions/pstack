@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const scriptsDirectory = import.meta.dir;
+const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const nodeModulesDirectory = join(scriptsDirectory, "node_modules");
 const commanderPackagePath = join(
   nodeModulesDirectory,
@@ -23,6 +26,18 @@ function currentInstallKey(): string {
 }
 
 export function ensureDependenciesInstalled(): void {
+  if (typeof Bun === "undefined") {
+    try {
+      import.meta.resolve("commander");
+      return;
+    } catch {
+      const result = spawnSync("bun", process.argv.slice(1), {
+        stdio: "inherit",
+      });
+      if (result.error) throw result.error;
+      process.exit(result.status ?? 1);
+    }
+  }
   const installKey = currentInstallKey();
   if (
     existsSync(commanderPackagePath) &&

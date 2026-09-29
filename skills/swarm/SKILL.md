@@ -22,7 +22,7 @@ Open a todolist with one entry per phase before launching anything.
 1. State the done predicate and the artifact or report the swarm must return.
 2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
 3. Set N from the user or derive it from the shape. N is total workers, not the cloud concurrency limit.
-4. Pick the worker model from `swarm workers` in the pstack settings file when present (`~/.cursor/rules/pstack-models.mdc` in Cursor, `~/.agents/pstack-models.md` in other harnesses). Otherwise use `grok-4.6-fast-xhigh`. For a model race, name each arm's model up front.
+4. Pick the worker model from `swarm workers` in the pstack settings file when present (`~/.cursor/rules/pstack-models.mdc` in Cursor; elsewhere, personal `~/.agents/pstack-models.md` first, then project `.agents/pstack/codex.md` in Codex). Otherwise use `grok-4.6-fast-xhigh`. For a model race, name each arm's model up front.
 5. Give each worker its own writable output when it writes.
 
 ## Phase B: Fan out
@@ -31,7 +31,7 @@ Spawn all N workers in one message with `subagent_type: generalPurpose`, `enviro
 
 When a worker must start from a non-default pushed branch, pass `cloud_base_branch`.
 
-**Other harnesses.** These parameters belong to Cursor's `Task` tool, and `environment: "cloud"` runs a Cursor cloud agent. In another harness, use its subagent tool: `Agent` in Claude Code (`subagent_type: general-purpose`), `task` in OpenCode (`subagent_type: general`), `spawn_agent` in Codex. Workers run locally there, so give each one its own worktree or output path. Keep the brief and the model. Drop parameters your tool doesn't have. If your harness has no subagent tool, as in Pi without an extension, run the workers yourself, one after another.
+**Other harnesses.** These parameters belong to Cursor's `Task` tool, and `environment: "cloud"` runs a Cursor cloud agent. In another harness, use its subagent tool: `Agent` in Claude Code (`subagent_type: general-purpose`), `task` in OpenCode (`subagent_type: general`), `spawn_agent` in Codex. Workers run locally there. Follow the project's checkout rule and give each worker a non-overlapping output path; use worktrees only where the project permits them. Keep the brief and the model. Drop parameters your tool doesn't have. If your harness has no subagent tool, as in Pi without an extension, run the workers yourself, one after another.
 
 Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence.
 

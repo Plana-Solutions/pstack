@@ -1,0 +1,27 @@
+name: PStack CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    runs-on: depot-ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - run: bun install --frozen-lockfile
+        working-directory: skills/poteto-mode/scripts
+      - run: bun test orch watch-pr
+        working-directory: skills/poteto-mode/scripts
+      - run: node orch/orch.ts --help
+        working-directory: skills/poteto-mode/scripts
+      - run: node watch-pr/watch-pr --help
+        working-directory: skills/poteto-mode/scripts

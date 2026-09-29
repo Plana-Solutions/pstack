@@ -10,7 +10,7 @@ Write pstack's model settings, one model per role:
 - **Cursor:** `~/.cursor/rules/pstack-models.mdc`, an always-applied rule.
 - **Every other harness** (Claude Code, Codex, Pi, OpenCode, and others): `~/.agents/pstack-models.md`. These harnesses don't load Cursor rules, so pstack skills read this file when they pick a model. In Codex, the project's `.agents/pstack/codex.md` is the fallback when no personal file exists.
 
-"The settings file" below means the file for your harness. When reading, check both paths and use the one that exists.
+"The settings file" below means the personal file for your harness. Read that file first. In Codex, use the project's `.agents/pstack/codex.md` only when the personal file is absent. Write only the personal file for the active harness.
 
 ## Steps
 
@@ -20,7 +20,7 @@ Enumerate the model slugs you can pass to a subagent in this session (Cursor `Ta
 
 ### 2. Load current state
 
-The default role-to-model mapping is the rule shape shown in step 5 below. If the settings file already exists, read it and treat its `# budget` line and its role values as the current choices. Otherwise start from those defaults.
+The default role-to-model mapping is the rule shape shown in step 5 below. If the settings file already exists, read it and treat its `# budget` line and its role values as the current choices. In Codex, if the personal file is absent and `.agents/pstack/codex.md` exists, use that project's budget and role values as the current choices. Otherwise start from the defaults.
 
 ### 3. Budget, map, and confirm
 

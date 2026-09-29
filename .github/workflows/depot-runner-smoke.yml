@@ -1,0 +1,9 @@
+name: Depot runner smoke
+on:
+  push:
+    branches: [fix/plana-integration]
+jobs:
+  host:
+    runs-on: depot-ubuntu-latest
+    steps:
+      - run: ldd --version

@@ -2,13 +2,27 @@
 on:
   workflow_dispatch:
   schedule: weekly on monday
+runs-on: depot-ubuntu-latest
+runs-on-slim: depot-ubuntu-latest
 permissions:
   contents: read
   pull-requests: read
-  copilot-requests: write
-engine: copilot
-network: defaults
+engine:
+  id: copilot
+  model: gpt-5.4-2026-03-05
+  env:
+    COPILOT_PROVIDER_BASE_URL: https://plana-solutions-1477-resource.services.ai.azure.com/openai/v1
+    COPILOT_PROVIDER_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+    COPILOT_PROVIDER_MODEL_ID: gpt-5.4
+    COPILOT_PROVIDER_WIRE_API: responses
+network:
+  allowed:
+    - defaults
+    - plana-solutions-1477-resource.services.ai.azure.com
 safe-outputs:
+  runs-on: depot-ubuntu-latest
+  threat-detection:
+    runs-on: depot-ubuntu-latest
   create-pull-request:
     max: 1
     draft: true

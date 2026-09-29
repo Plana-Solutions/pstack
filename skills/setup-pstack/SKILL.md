@@ -8,7 +8,7 @@ description: Configure which models pstack uses per role and at what reasoning b
 Write pstack's model settings, one model per role:
 
 - **Cursor:** `~/.cursor/rules/pstack-models.mdc`, an always-applied rule.
-- **Every other harness** (Claude Code, Codex, Pi, OpenCode, and others): `~/.agents/pstack-models.md`. These harnesses don't load Cursor rules, so pstack skills read this file when they pick a model.
+- **Every other harness** (Claude Code, Codex, Pi, OpenCode, and others): `~/.agents/pstack-models.md`. These harnesses don't load Cursor rules, so pstack skills read this file when they pick a model. In Codex, the project's `.agents/pstack/codex.md` is the fallback when no personal file exists.
 
 "The settings file" below means the file for your harness. When reading, check both paths and use the one that exists.
 

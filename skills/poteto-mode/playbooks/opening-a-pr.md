@@ -1,8 +1,8 @@
 ### Opening a PR
 
-Invoked at the end of every other playbook.
+Run this playbook only when the user explicitly requested a PR. Otherwise, stop after the local change and report it.
 
-**Worktree.** Work from a git worktree off main. Subagents inherit it. Multiple `Task` calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
+**Checkout.** Follow the project's checkout rule. When agents share one checkout, assign non-overlapping files and serialize branch operations. Do not create subagent worktrees where the project prohibits them. Preserve unrelated dirty work.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable.
 

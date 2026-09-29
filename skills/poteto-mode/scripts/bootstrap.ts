@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const scriptsDirectory = import.meta.dir;
+const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
 const nodeModulesDirectory = join(scriptsDirectory, "node_modules");
 const commanderPackagePath = join(
   nodeModulesDirectory,
@@ -23,6 +25,7 @@ function currentInstallKey(): string {
 }
 
 export function ensureDependenciesInstalled(): void {
+  if (typeof Bun === "undefined") return;
   const installKey = currentInstallKey();
   if (
     existsSync(commanderPackagePath) &&

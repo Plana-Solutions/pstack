@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   ChecksUnavailable,
   WatcherQueryError,
+  collectReviewThreads,
   mapRollupNode,
   orderStack,
   parsePullRequest,
@@ -256,6 +257,38 @@ it("annotates Bugbot threads with distinct review-pass counts", () => {
   expect(threads.map((thread) => thread.bugbotReviewPasses)).toEqual([3, 3]);
 });
 
+it("includes unresolved review threads beyond the first GraphQL page", async () => {
+  const thread = (id: string) => ({
+    id,
+    isResolved: false,
+    comments: {
+      nodes: [{
+        body: "review this change",
+        createdAt: "now",
+        path: "src/file.ts",
+        line: 1,
+        author: { login: "reviewer" },
+      }],
+    },
+  });
+  const page = (nodes: unknown[], hasNextPage: boolean, endCursor: string | null) => ({
+    data: { repository: { pullRequest: { reviewThreads: {
+      nodes,
+      pageInfo: { hasNextPage, endCursor },
+    } } } },
+  });
+  const cursors: (string | null)[] = [];
+  const threads = await collectReviewThreads(async (after) => {
+    cursors.push(after);
+    return after === null
+      ? page(Array.from({ length: 100 }, (_, index) => thread(String(index))), true, "next")
+      : page([thread("last")], false, null);
+  });
+  expect(cursors).toEqual([null, "next"]);
+  expect(threads).toHaveLength(101);
+  expect(threads.at(-1)?.id).toBe("last");
+});
+
 describe("context and stack discovery", () => {
   it("returns a fully explicit context without any reader call", async () => {
     const reader = fakeReader();
@@ -302,5 +335,18 @@ describe("context and stack discovery", () => {
       },
     ]);
     expect(ordered.map((item) => Number(item.number))).toEqual([41, 42, 43]);
+  });
+
+  it("rejects a cycle in the downstack", () => {
+    expect(() =>
+      orderStack(context, [
+        { number: context.number, headRefName: "feature", baseRefName: "base" },
+        {
+          number: parsePrNumber(41),
+          headRefName: "base",
+          baseRefName: "feature",
+        },
+      ])
+    ).toThrow("cyclic PR stack at #42");
   });
 });

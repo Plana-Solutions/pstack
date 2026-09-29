@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import type * as T from "./types.ts";
 import { nonEmpty, parsePrNumber } from "./types.ts";
 export const REVIEW_THREADS_QUERY =
-  "\nquery ReviewThreads($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100) {\n        nodes {\n          id\n          isResolved\n          comments(first: 10) {\n            nodes {\n              body\n              createdAt\n              path\n              line\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
+  "\nquery ReviewThreads($owner: String!, $repo: String!, $pr: Int!, $after: String) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      reviewThreads(first: 100, after: $after) {\n        pageInfo { hasNextPage endCursor }\n        nodes {\n          id\n          isResolved\n          comments(first: 10) {\n            nodes {\n              body\n              createdAt\n              path\n              line\n              author { login }\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 export const PR_COMMIT_STATUS_QUERY =
   "\nquery PrCommitStatuses($owner: String!, $repo: String!, $pr: Int!) {\n  repository(owner: $owner, name: $repo) {\n    pullRequest(number: $pr) {\n      commits(last: 50) {\n        nodes {\n          commit {\n            oid\n            statusCheckRollup {\n              state\n            }\n          }\n        }\n      }\n    }\n  }\n}\n";
 export const PR_CHECK_ROLLUP_QUERY =
@@ -362,6 +362,9 @@ export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
     at(value, ["data", "repository", "pullRequest", "reviewThreads", "nodes"]),
     "reviewThreads.nodes"
   );
+  return parseReviewThreadNodes(nodes);
+}
+function parseReviewThreadNodes(nodes: readonly unknown[]): readonly T.ReviewThread[] {
   const threads: {
     readonly id: string;
     readonly firstComment: T.ReviewComment | null;
@@ -398,6 +401,28 @@ export function parseReviewThreads(value: unknown): readonly T.ReviewThread[] {
       isBugbot: isBugbot(firstComment),
       bugbotReviewPasses: passes,
     }));
+}
+export async function collectReviewThreads(
+  fetchPage: (after: string | null) => Promise<unknown>
+): Promise<readonly T.ReviewThread[]> {
+  const nodes: unknown[] = [];
+  let after: string | null = null;
+  do {
+    const value = await fetchPage(after);
+    const threads = record(
+      at(value, ["data", "repository", "pullRequest", "reviewThreads"]),
+      "reviewThreads"
+    );
+    nodes.push(...list(threads.nodes, "reviewThreads.nodes"));
+    const page = record(threads.pageInfo, "reviewThreads.pageInfo");
+    if (typeof page.hasNextPage !== "boolean")
+      missing("reviewThreads.pageInfo.hasNextPage", page.hasNextPage);
+    const cursor = optionalString(page.endCursor, "reviewThreads.pageInfo.endCursor");
+    if (page.hasNextPage && (!cursor || cursor === after))
+      missing("reviewThreads.pageInfo.endCursor", page.endCursor);
+    after = page.hasNextPage ? cursor : null;
+  } while (after !== null);
+  return parseReviewThreadNodes(nodes);
 }
 export function parsePullRequest(
   value: unknown,
@@ -571,9 +596,11 @@ export class GhGitHubReader implements T.GitHubReader {
   async reviewThreads(
     context: T.PrContext
   ): Promise<readonly T.ReviewThread[]> {
-    return parseReviewThreads(
-      await runJson(graphqlArgs(REVIEW_THREADS_QUERY, context))
-    );
+    return collectReviewThreads(async (after) => {
+      const argv = graphqlArgs(REVIEW_THREADS_QUERY, context);
+      if (after !== null) argv.push("-f", `after=${after}`);
+      return runJson(argv);
+    });
   }
   async commitRollups(
     context: T.PrContext
@@ -661,10 +688,14 @@ export function orderStack(
   const start = byNumber.get(context.number);
   if (start === undefined) return [context];
   const down: T.OpenPullRequest[] = [];
+  const downSeen = new Set<T.PrNumber>([start.number]);
   let current = start;
   while (byHead.has(current.baseRefName)) {
     const parent = byHead.get(current.baseRefName);
     if (parent === undefined) break;
+    if (downSeen.has(parent.number))
+      throw new Error(`cyclic PR stack at #${parent.number}`);
+    downSeen.add(parent.number);
     down.push(parent);
     current = parent;
   }

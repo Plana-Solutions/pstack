@@ -19,6 +19,9 @@ network:
   allowed:
     - defaults
     - plana-solutions-1477-resource.services.ai.azure.com
+sandbox:
+  agent:
+    runtime: docker-sudo-iptables
 safe-outputs:
   runs-on: depot-ubuntu-latest
   threat-detection:

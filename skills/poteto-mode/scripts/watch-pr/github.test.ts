@@ -338,7 +338,7 @@ describe("context and stack discovery", () => {
   });
 
   it("rejects a cycle in the downstack", () => {
-    expect(() =>
+    try {
       orderStack(context, [
         { number: context.number, headRefName: "feature", baseRefName: "base" },
         {
@@ -346,7 +346,16 @@ describe("context and stack discovery", () => {
           headRefName: "base",
           baseRefName: "feature",
         },
-      ])
-    ).toThrow("cyclic PR stack at #42");
+      ]);
+      throw new Error("expected a cyclic stack error");
+    } catch (error) {
+      expect(error).toBeInstanceOf(WatcherQueryError);
+      if (!(error instanceof WatcherQueryError)) throw error;
+      expect(error.failure).toEqual({
+        kind: "invalid-stack",
+        retryable: false,
+        detail: "cyclic PR stack at #42",
+      });
+    }
   });
 });

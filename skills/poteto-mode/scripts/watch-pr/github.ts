@@ -694,7 +694,11 @@ export function orderStack(
     const parent = byHead.get(current.baseRefName);
     if (parent === undefined) break;
     if (downSeen.has(parent.number))
-      throw new Error(`cyclic PR stack at #${parent.number}`);
+      throw new WatcherQueryError({
+        kind: "invalid-stack",
+        retryable: false,
+        detail: `cyclic PR stack at #${parent.number}`,
+      });
     downSeen.add(parent.number);
     down.push(parent);
     current = parent;
